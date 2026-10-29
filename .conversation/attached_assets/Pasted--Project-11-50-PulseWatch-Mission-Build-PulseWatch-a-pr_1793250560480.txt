@@ -1,0 +1,88 @@
+# Project 11/50 — PulseWatch
+
+## Mission
+Build PulseWatch, a production-quality website and API reliability monitoring SaaS. It must be a functional application, not a static dashboard or UI mockup.
+
+## Product requirements
+
+### 1. Authentication and onboarding
+- Secure registration, login, and logout.
+- User-specific monitoring resources.
+- A guided onboarding flow that adds the first monitored endpoint.
+
+### 2. Monitor management
+- Create, edit, pause, resume, and delete monitors.
+- Support HTTP and HTTPS endpoints.
+- Configure check intervals, timeout limits, and expected HTTP status codes.
+- Validate URLs and handle unreachable hosts, redirects, timeouts, and server errors.
+
+### 3. Monitoring engine
+- Execute checks using a background worker and scheduled jobs.
+- Store timestamped results, HTTP status, response latency, and error categories.
+- Detect transitions between operational and failed states.
+- Prevent overlapping checks and duplicate incident creation.
+- Include retry policies and clear failure handling.
+- Never allow user-submitted URLs to access localhost, private networks, cloud metadata endpoints, or other restricted destinations. Revalidate resolved IP addresses to mitigate SSRF.
+
+### 4. Analytics dashboard
+- Overall operational status.
+- Per-monitor uptime percentages over configurable periods.
+- Response-time charts and historical check results.
+- Incident counts, duration, and recovery history.
+- Filtering, pagination, loading states, empty states, and error states.
+
+### 5. Incident management
+- Automatically create incidents after configured failure thresholds.
+- Record detection, acknowledgement, investigation, and resolution events.
+- Maintain an auditable incident timeline.
+- Avoid creating a new incident for every failed check.
+
+### 6. Public status pages
+- Generate shareable public status pages.
+- Show current service health, uptime history, and resolved incidents.
+- Allow owners to choose which monitors are public.
+- Never expose private monitor configuration, credentials, or internal error details.
+
+### 7. Premium interface
+- Design a polished, responsive SaaS application.
+- Use a clean information hierarchy, refined typography, consistent spacing, accessible contrast, and restrained animations.
+- Include dashboard, monitor details, incident details, settings, and public status pages.
+- Make every control functional; avoid fake buttons and fabricated production data.
+- Include realistic seed data for local development, clearly separated from real monitoring results.
+
+## Suggested architecture
+- Frontend: Next.js, React, TypeScript, and Tailwind CSS.
+- Backend: FastAPI and Python.
+- Database: PostgreSQL with migrations.
+- Background processing: Redis and a task worker.
+- Testing: pytest, frontend component tests, and end-to-end tests.
+- Local development: Docker Compose.
+
+You may improve this stack when there is a strong technical reason, but document the decision.
+
+## Engineering requirements
+- Define service boundaries, database entities, API contracts, and failure states before implementation.
+- Enforce authentication and authorization on the server.
+- Validate inputs on both the client and server.
+- Add database constraints, appropriate indexes, structured logs, and health checks.
+- Handle worker crashes, retries, duplicate events, and database failures.
+- Keep secrets in environment variables and provide an example environment file without real credentials.
+- Add unit, integration, security, and end-to-end tests.
+- Include a README with setup, architecture, migrations, testing, and deployment instructions.
+- Use migrations rather than manual database setup.
+
+## Required delivery
+1. A working application that starts locally.
+2. A clean, responsive user interface.
+3. Functional monitoring and persisted historical results.
+4. Automated incident detection and recovery tracking.
+5. A working public status page.
+6. Passing tests and a documented verification report.
+7. A deployment-ready configuration and setup guide.
+
+## Execution protocol
+First inspect the repository and state your implementation plan, architecture, risks, and acceptance criteria. Then implement in small, verifiable stages. Run tests and type checks after meaningful changes. Fix failures instead of hiding or skipping them. Never claim a feature works without testing it.
+
+At completion, report what works, what was tested, what remains incomplete, security limitations, and exact local startup commands.
+
+This is Project 11 of a 50-project engineering challenge. Prioritize genuine functionality, sound architecture, security, and product quality over excessive features.

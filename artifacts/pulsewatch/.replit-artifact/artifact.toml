@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "PulseWatch"
+description = "A website and API reliability platform for teams that need dependable checks, trustworthy incident history, analytics, and shareable public status pages."
+version = "1.0.0"
+id = "artifacts/pulsewatch"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23717
+
+[services.development]
+run = "pnpm --filter @workspace/pulsewatch run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pulsewatch", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/pulsewatch/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23717"
+BASE_PATH = "/"

@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: PulseWatch reliability monitoring API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Authenticated dashboard analytics
+  - name: monitors
+    description: Authenticated monitor management and history
+  - name: incidents
+    description: Authenticated incident management
+  - name: status-pages
+    description: Authenticated status page settings and public read-only pages
 paths:
   /healthz:
     get:
@@ -24,6 +32,406 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard analytics
+      parameters:
+        - name: period
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AnalyticsPeriod"
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /monitors:
+    get:
+      operationId: listMonitors
+      tags: [monitors]
+      summary: List the current user's monitors
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, up, down, paused, unknown]
+            default: all
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        "200":
+          description: Monitors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Monitor"
+    post:
+      operationId: createMonitor
+      tags: [monitors]
+      summary: Create a monitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MonitorInput"
+      responses:
+        "200":
+          description: Existing sample monitors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoSeedResult"
+        "201":
+          description: Created monitor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Monitor"
+  /dev/seed:
+    post:
+      operationId: seedDemoMonitors
+      tags: [monitors]
+      summary: Add local development sample monitors
+      responses:
+        "201":
+          description: Sample monitors created for the signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoSeedResult"
+        "404":
+          description: Development-only operation
+  /monitors/{monitorId}:
+    parameters:
+      - name: monitorId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getMonitor
+      tags: [monitors]
+      summary: Get monitor details
+      responses:
+        "200":
+          description: Monitor details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Monitor"
+        "404":
+          description: Monitor not found
+    patch:
+      operationId: updateMonitor
+      tags: [monitors]
+      summary: Update monitor settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MonitorUpdate"
+      responses:
+        "200":
+          description: Updated monitor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Monitor"
+    delete:
+      operationId: deleteMonitor
+      tags: [monitors]
+      summary: Delete a monitor and its history
+      responses:
+        "204":
+          description: Deleted
+  /monitors/{monitorId}/pause:
+    post:
+      operationId: pauseMonitor
+      tags: [monitors]
+      summary: Pause a monitor
+      parameters:
+        - name: monitorId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Paused monitor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Monitor"
+  /monitors/{monitorId}/resume:
+    post:
+      operationId: resumeMonitor
+      tags: [monitors]
+      summary: Resume a monitor and schedule an immediate check
+      parameters:
+        - name: monitorId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Resumed monitor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Monitor"
+  /monitor-checks:
+    get:
+      operationId: listMonitorChecks
+      tags: [monitors]
+      summary: Get paginated check history
+      parameters:
+        - name: monitorId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: period
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AnalyticsPeriod"
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Paginated history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckHistoryPage"
+  /monitors/{monitorId}/check-now:
+    post:
+      operationId: checkMonitorNow
+      tags: [monitors]
+      summary: Run a check immediately
+      parameters:
+        - name: monitorId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "202":
+          description: Check queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckQueued"
+  /incidents:
+    get:
+      operationId: listIncidents
+      tags: [incidents]
+      summary: List incidents
+      parameters:
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, open, acknowledged, investigating, resolved]
+            default: all
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        "200":
+          description: Paginated incidents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentPage"
+  /incidents/{incidentId}:
+    get:
+      operationId: getIncident
+      tags: [incidents]
+      summary: Get incident and audit timeline
+      parameters:
+        - name: incidentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Incident details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+        "404":
+          description: Incident not found
+  /incidents/{incidentId}/acknowledge:
+    post:
+      operationId: acknowledgeIncident
+      tags: [incidents]
+      summary: Acknowledge an incident
+      parameters:
+        - name: incidentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Updated incident
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+  /incidents/{incidentId}/investigate:
+    post:
+      operationId: investigateIncident
+      tags: [incidents]
+      summary: Add an investigation timeline event
+      parameters:
+        - name: incidentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentNoteInput"
+      responses:
+        "200":
+          description: Updated incident
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+  /incidents/{incidentId}/resolve:
+    post:
+      operationId: resolveIncident
+      tags: [incidents]
+      summary: Resolve an incident
+      parameters:
+        - name: incidentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentNoteInput"
+      responses:
+        "200":
+          description: Updated incident
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+  /status-page:
+    get:
+      operationId: getStatusPageSettings
+      tags: [status-pages]
+      summary: Get status page settings
+      responses:
+        "200":
+          description: Status page settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusPageSettings"
+    patch:
+      operationId: updateStatusPageSettings
+      tags: [status-pages]
+      summary: Update public status page settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusPageUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusPageSettings"
+  /public/status/{slug}:
+    get:
+      operationId: getPublicStatusPage
+      tags: [status-pages]
+      summary: Get a shareable public status page
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 48
+      responses:
+        "200":
+          description: Sanitized public status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicStatusPage"
+        "404":
+          description: Status page not found
 components:
   schemas:
     HealthStatus:
@@ -33,4 +441,275 @@ components:
           type: string
       required:
         - status
+    AnalyticsPeriod:
+      type: string
+      enum: [24h, 7d, 30d, 90d]
+      default: 24h
+    MonitorStatus:
+      type: string
+      enum: [up, down, paused, unknown]
+    CheckState:
+      type: string
+      enum: [up, down]
+    ErrorCategory:
+      type: ["string", "null"]
+      enum: [timeout, dns, connection, tls, http_status, restricted_address, invalid_url, unknown, null]
+    Monitor:
+      type: object
+      required: [id, name, url, method, intervalSeconds, timeoutMs, expectedStatusCodes, failureThreshold, isPaused, isPublic, isDemo, status, consecutiveFailures, lastCheckedAt, lastHttpStatus, lastLatencyMs, uptimePercent, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        url: { type: string, format: uri }
+        method: { type: string, enum: [GET, HEAD] }
+        intervalSeconds: { type: integer }
+        timeoutMs: { type: integer }
+        expectedStatusCodes:
+          type: array
+          items: { type: integer }
+        failureThreshold: { type: integer }
+        isPaused: { type: boolean }
+        isPublic: { type: boolean }
+        isDemo: { type: boolean }
+        status:
+          $ref: "#/components/schemas/MonitorStatus"
+        consecutiveFailures: { type: integer }
+        lastCheckedAt: { type: ["string", "null"], format: date-time }
+        lastHttpStatus: { type: ["integer", "null"] }
+        lastLatencyMs: { type: ["integer", "null"] }
+        uptimePercent: { type: number }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    MonitorInput:
+      type: object
+      required: [name, url]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        url: { type: string, format: uri, maxLength: 2048 }
+        method: { type: string, enum: [GET, HEAD], default: GET }
+        intervalSeconds: { type: integer, enum: [30, 60, 300, 600], default: 60 }
+        timeoutMs: { type: integer, minimum: 1000, maximum: 30000, default: 10000 }
+        expectedStatusCodes:
+          type: array
+          minItems: 1
+          maxItems: 10
+          uniqueItems: true
+          items: { type: integer, minimum: 100, maximum: 599 }
+          default: [200]
+        failureThreshold: { type: integer, minimum: 1, maximum: 10, default: 3 }
+        isPublic: { type: boolean, default: false }
+    MonitorUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        url: { type: string, format: uri, maxLength: 2048 }
+        method: { type: string, enum: [GET, HEAD] }
+        intervalSeconds: { type: integer, enum: [30, 60, 300, 600] }
+        timeoutMs: { type: integer, minimum: 1000, maximum: 30000 }
+        expectedStatusCodes:
+          type: array
+          minItems: 1
+          maxItems: 10
+          uniqueItems: true
+          items: { type: integer, minimum: 100, maximum: 599 }
+        failureThreshold: { type: integer, minimum: 1, maximum: 10 }
+        isPublic: { type: boolean }
+    CheckResult:
+      type: object
+      required: [id, monitorId, checkedAt, state, httpStatus, latencyMs, errorCategory, errorMessage]
+      properties:
+        id: { type: string, format: uuid }
+        monitorId: { type: string, format: uuid }
+        checkedAt: { type: string, format: date-time }
+        state:
+          $ref: "#/components/schemas/CheckState"
+        httpStatus: { type: ["integer", "null"] }
+        latencyMs: { type: ["integer", "null"] }
+        errorCategory:
+          $ref: "#/components/schemas/ErrorCategory"
+        errorMessage: { type: ["string", "null"] }
+    CheckHistoryPage:
+      type: object
+      required: [items, page, pageSize, total, uptimePercent]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CheckResult"
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+        uptimePercent: { type: number }
+    CheckQueued:
+      type: object
+      required: [queued]
+      properties:
+        queued: { type: boolean }
+    DemoSeedResult:
+      type: object
+      required: [created, message, monitors]
+      properties:
+        created: { type: integer }
+        message: { type: string }
+        monitors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Monitor"
+    Dashboard:
+      type: object
+      required: [period, totalMonitors, operationalMonitors, failingMonitors, pausedMonitors, openIncidents, uptimePercent, averageLatencyMs, monitors, recentIncidents, responseTimeSeries]
+      properties:
+        period:
+          $ref: "#/components/schemas/AnalyticsPeriod"
+        totalMonitors: { type: integer }
+        operationalMonitors: { type: integer }
+        failingMonitors: { type: integer }
+        pausedMonitors: { type: integer }
+        openIncidents: { type: integer }
+        uptimePercent: { type: number }
+        averageLatencyMs: { type: ["integer", "null"] }
+        monitors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Monitor"
+        recentIncidents:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentSummary"
+        responseTimeSeries:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResponseTimePoint"
+    ResponseTimePoint:
+      type: object
+      required: [timestamp, averageLatencyMs, checks, failures]
+      properties:
+        timestamp: { type: string, format: date-time }
+        averageLatencyMs: { type: ["integer", "null"] }
+        checks: { type: integer }
+        failures: { type: integer }
+    IncidentState:
+      type: string
+      enum: [open, acknowledged, investigating, resolved]
+    IncidentEventType:
+      type: string
+      enum: [detected, acknowledged, investigating, resolved, recovered]
+    IncidentEvent:
+      type: object
+      required: [id, type, message, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        type:
+          $ref: "#/components/schemas/IncidentEventType"
+        message: { type: string }
+        actorLabel: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    IncidentSummary:
+      type: object
+      required: [id, monitorId, monitorName, state, detectedAt, resolvedAt, durationSeconds]
+      properties:
+        id: { type: string, format: uuid }
+        monitorId: { type: string, format: uuid }
+        monitorName: { type: string }
+        state:
+          $ref: "#/components/schemas/IncidentState"
+        detectedAt: { type: string, format: date-time }
+        resolvedAt: { type: ["string", "null"], format: date-time }
+        durationSeconds: { type: ["integer", "null"] }
+    Incident:
+      allOf:
+        - $ref: "#/components/schemas/IncidentSummary"
+        - type: object
+          required: [events, acknowledgedAt]
+          properties:
+            acknowledgedAt: { type: ["string", "null"], format: date-time }
+            events:
+              type: array
+              items:
+                $ref: "#/components/schemas/IncidentEvent"
+    IncidentPage:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Incident"
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+    IncidentNoteInput:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, minLength: 1, maxLength: 2000 }
+    StatusPageSettings:
+      type: object
+      required: [title, slug, publicUrl, publicMonitorCount]
+      properties:
+        title: { type: string }
+        slug: { type: string }
+        publicUrl: { type: string }
+        publicMonitorCount: { type: integer }
+    StatusPageUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        title: { type: string, minLength: 1, maxLength: 100 }
+        slug:
+          type: string
+          minLength: 3
+          maxLength: 48
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    PublicStatusPage:
+      type: object
+      required: [title, slug, overallStatus, uptimePercent, services, incidents, updatedAt]
+      properties:
+        title: { type: string }
+        slug: { type: string }
+        overallStatus:
+          type: string
+          enum: [operational, partial_outage, major_outage, no_services]
+        uptimePercent: { type: number }
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicServiceStatus"
+        incidents:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicIncident"
+        updatedAt: { type: string, format: date-time }
+    PublicServiceStatus:
+      type: object
+      required: [name, status, uptimePercent, history]
+      properties:
+        name: { type: string }
+        status:
+          type: string
+          enum: [operational, outage, unknown]
+        uptimePercent: { type: number }
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicHistoryPoint"
+    PublicHistoryPoint:
+      type: object
+      required: [date, status]
+      properties:
+        date: { type: string, format: date }
+        status:
+          type: string
+          enum: [operational, outage, unknown]
+    PublicIncident:
+      type: object
+      required: [title, status, startedAt, resolvedAt]
+      properties:
+        title: { type: string }
+        status:
+          type: string
+          enum: [investigating, identified, monitoring, resolved]
+        startedAt: { type: string, format: date-time }
+        resolvedAt: { type: ["string", "null"], format: date-time }
 
