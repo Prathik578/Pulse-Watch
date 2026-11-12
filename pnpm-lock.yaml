@@ -421,14 +421,13 @@ importers:
         version: 3.25.76
 
   artifacts/pulsewatch:
-    dependencies:
+    devDependencies:
       '@clerk/react':
         specifier: ^6.18.3
         version: 6.18.3(react-dom@19.1.4(react@19.1.4))(react@19.1.4)
       '@clerk/themes':
         specifier: ^2.4.57
         version: 2.4.57(react-dom@19.1.4(react@19.1.4))(react@19.1.4)
-    devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0
         version: 3.10.0(react-hook-form@7.90.0(@types/react@19.3.0)(react@19.1.4))
