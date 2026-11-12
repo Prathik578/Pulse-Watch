@@ -162,7 +162,7 @@ function MonitorModal({ onClose, onCreated, initial }: { onClose: () => void; on
   const busy = create.isPending || update.isPending;
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const codes = [...new Set(expectedCodes.split(',').map(code => Number(code.trim())))];
+    const codes: number[] = Array.from(new Set<number>(expectedCodes.split(',').map((code: string) => Number(code.trim()))));
     if (!codes.length || codes.some(code => !Number.isInteger(code) || code < 100 || code > 599)) {
       setValidationError('Enter one or more HTTP status codes from 100 to 599.');
       return;
